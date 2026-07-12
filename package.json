@@ -8,6 +8,7 @@
   },
   "scripts": {
     "validate": "node tools/validate.js",
+    "build": "node tools/build-site.js",
     "test": "node tools/validate.js && node tools/test.js"
   },
   "license": "MIT"

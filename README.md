@@ -55,16 +55,42 @@ npm test                          # validate + run parser unit tests
 (track count, note count, duration) for each valid song. It's meant to run in
 CI or a pre-commit hook.
 
+## Publish the songs to the web (GitHub Pages)
+
+Every song in the repo is published as a playable web gallery via GitHub
+Actions. On each push to `main` that touches a song (or the player code), the
+workflow validates every song, builds a static site, and deploys it to Pages.
+
+Build the gallery locally to preview it:
+
+```
+npm run build            # writes ./site
+python3 -m http.server   # then open http://localhost:8000/site/
+```
+
+**One-time setup:** in the repo on GitHub, go to **Settings → Pages** and set
+**Source: GitHub Actions**. After the next push to `main` (or a manual run via
+the Actions tab → "Deploy songs to GitHub Pages" → *Run workflow*), the gallery
+goes live at `https://<owner>.github.io/music-machine/`.
+
+How it works: GitHub Pages is static and can't list a directory at runtime, so
+`tools/build-site.js` bakes every `.song` file into a manifest at build time.
+The gallery then parses and plays them client-side with the **same** parser and
+audio engine used everywhere else in the project.
+
 ## Repository layout
 
 ```
-songs/            the songs themselves (.song text files)
-src/song.js       the parser + pitch/duration math — one source of truth,
-                  shared by the player and the validator
-player/index.html self-contained Web Audio player
-tools/validate.js CLI validator (CI-friendly)
-tools/test.js     unit tests for the parser core
-docs/FORMAT.md    the .song format reference
+songs/               the songs themselves (.song text files)
+src/song.js          the parser + pitch/duration math — one source of truth
+src/engine.js        the Web Audio playback engine, shared by both front-ends
+player/index.html    self-contained local Web Audio player
+tools/validate.js    CLI validator (CI-friendly)
+tools/test.js        unit tests for the parser core
+tools/build-site.js  builds the GitHub Pages gallery into site/
+tools/gallery.html   the gallery page template
+.github/workflows/pages.yml   validate → build → deploy to Pages
+docs/FORMAT.md       the .song format reference
 ```
 
 ## The format in 30 seconds
