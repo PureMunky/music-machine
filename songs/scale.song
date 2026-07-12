@@ -1,0 +1,9 @@
+// A C major scale up and back down.
+// Good for sanity-checking pitch and timing.
+
+title: C Major Scale
+tempo: 140
+
+track scale: lead
+  C4 D4 E4 F4 | G4 A4 B4 C5
+  C5 B4 A4 G4 | F4 E4 D4 C4:h

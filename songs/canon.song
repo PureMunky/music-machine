@@ -1,0 +1,22 @@
+// A multi-track sketch over the Pachelbel chord progression.
+// Three tracks play at once: a melody, block-chord harmony, and a bass line.
+// This shows how the format scales from one instrument to a small arrangement.
+
+title: Canon Sketch
+tempo: 100
+
+track melody: lead
+  E5:h D5:h | C5:h B4:h
+  A4:h G4:h | A4:h B4:h
+  C5:h B4:h | A4:h G4:h
+  F4:h E4:h | D4:h D5:h
+
+track harmony: piano
+  [D4 F#4 A4]:w | [A3 C#4 E4]:w
+  [B3 D4 F#4]:w | [F#3 A3 C#4]:w
+  [G3 B3 D4]:w   | [D3 F#3 A3]:w
+  [G3 B3 D4]:w   | [A3 C#4 E4]:w
+
+track bass: bass
+  D3:h A2:h | B2:h F#2:h
+  G2:h D2:h | G2:h A2:h

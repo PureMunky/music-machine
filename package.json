@@ -1,0 +1,14 @@
+{
+  "name": "music-machine",
+  "version": "0.1.0",
+  "description": "Version-controlled songs as plain text, with reliable browser playback.",
+  "type": "commonjs",
+  "bin": {
+    "song-validate": "tools/validate.js"
+  },
+  "scripts": {
+    "validate": "node tools/validate.js",
+    "test": "node tools/validate.js && node tools/test.js"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>music-machine · player</title>
+  <style>
+    :root {
+      --bg: #12131a; --panel: #1c1e29; --ink: #e7e9f0; --muted: #8b8fa3;
+      --accent: #7c8cff; --accent-2: #4ad6a0; --err: #ff6b7d; --line: #2a2d3d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font: 15px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      background: var(--bg); color: var(--ink); padding: 24px;
+    }
+    h1 { font-size: 18px; margin: 0 0 2px; letter-spacing: 0.02em; }
+    h1 .mm { color: var(--accent); }
+    .sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+    .wrap { max-width: 860px; margin: 0 auto; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+    label { color: var(--muted); font-size: 13px; }
+    select, button, input[type=file]::file-selector-button {
+      font: inherit; background: #262a3a; color: var(--ink);
+      border: 1px solid var(--line); border-radius: 7px; padding: 7px 12px; cursor: pointer;
+    }
+    button:hover, select:hover { border-color: var(--accent); }
+    button.primary { background: var(--accent); color: #10121c; border-color: var(--accent); font-weight: 600; }
+    button.stop { background: #2a2d3d; }
+    button:disabled { opacity: 0.45; cursor: default; }
+    textarea {
+      width: 100%; height: 320px; resize: vertical; background: #0e0f16; color: var(--ink);
+      border: 1px solid var(--line); border-radius: 8px; padding: 12px; font: inherit; line-height: 1.6;
+      tab-size: 2;
+    }
+    .status { margin-top: 12px; font-size: 13px; min-height: 20px; }
+    .status.ok { color: var(--accent-2); }
+    .status.err { color: var(--err); white-space: pre-wrap; }
+    .meta { color: var(--muted); font-size: 13px; margin-top: 10px; }
+    .bars { margin-top: 14px; display: grid; gap: 6px; }
+    .bar { display: grid; grid-template-columns: 90px 1fr; gap: 10px; align-items: center; }
+    .bar .name { color: var(--muted); font-size: 12px; text-align: right; overflow: hidden; text-overflow: ellipsis; }
+    .bar .track { position: relative; height: 14px; background: #0e0f16; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+    .bar .fill { position: absolute; inset: 0; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); opacity: 0.35; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1><span class="mm">music-machine</span> player</h1>
+    <div class="sub">Plain-text songs → sound, right in the browser. No plugins, no install.</div>
+
+    <div class="panel">
+      <div class="row">
+        <label for="examples">Example:</label>
+        <select id="examples">
+          <option value="twinkle">Twinkle Twinkle</option>
+          <option value="scale">C Major Scale</option>
+          <option value="canon">Canon Sketch (multi-track)</option>
+        </select>
+        <label for="file" style="margin-left:8px">or load a .song file:</label>
+        <input id="file" type="file" accept=".song,.txt,text/plain" />
+      </div>
+
+      <textarea id="src" spellcheck="false"></textarea>
+
+      <div class="row" style="margin-top:12px">
+        <button id="play" class="primary">▶ Play</button>
+        <button id="stop" class="stop" disabled>■ Stop</button>
+        <span id="meta" class="meta"></span>
+      </div>
+
+      <div id="bars" class="bars"></div>
+      <div id="status" class="status"></div>
+    </div>
+
+    <p class="sub" style="margin-top:16px">
+      Format reference lives in <code>docs/FORMAT.md</code>. Edit the text above and hit Play —
+      changes are instant.
+    </p>
+  </div>
+
+  <!-- Same parser the Node validator uses. Loaded as a classic script so it
+       works from file:// without a server. -->
+  <script src="../src/song.js"></script>
+  <script>
+    // Fallback for the standalone/artifact build where the parser is inlined.
+    var MM = window.MusicMachine;
+
+    var EXAMPLES = {
+      twinkle:
+"// Twinkle Twinkle Little Star\n\ntitle: Twinkle Twinkle Little Star\ntempo: 120\n\n" +
+"track melody: piano\n  C4 C4 G4 G4 | A4 A4 G4:h\n  F4 F4 E4 E4 | D4 D4 C4:h\n" +
+"  G4 G4 F4 F4 | E4 E4 D4:h\n  G4 G4 F4 F4 | E4 E4 D4:h\n" +
+"  C4 C4 G4 G4 | A4 A4 G4:h\n  F4 F4 E4 E4 | D4 D4 C4:h\n",
+      scale:
+"// C Major Scale\n\ntitle: C Major Scale\ntempo: 140\n\n" +
+"track scale: lead\n  C4 D4 E4 F4 | G4 A4 B4 C5\n  C5 B4 A4 G4 | F4 E4 D4 C4:h\n",
+      canon:
+"// Canon Sketch — three tracks at once\n\ntitle: Canon Sketch\ntempo: 100\n\n" +
+"track melody: lead\n  E5:h D5:h | C5:h B4:h\n  A4:h G4:h | A4:h B4:h\n" +
+"  C5:h B4:h | A4:h G4:h\n  F4:h E4:h | D4:h D5:h\n\n" +
+"track harmony: piano\n  [D4 F#4 A4]:w | [A3 C#4 E4]:w\n  [B3 D4 F#4]:w | [F#3 A3 C#4]:w\n" +
+"  [G3 B3 D4]:w   | [D3 F#3 A3]:w\n  [G3 B3 D4]:w   | [A3 C#4 E4]:w\n\n" +
+"track bass: bass\n  D3:h A2:h | B2:h F#2:h\n  G2:h D2:h | G2:h A2:h\n"
+    };
+
+    var srcEl = document.getElementById('src');
+    var statusEl = document.getElementById('status');
+    var metaEl = document.getElementById('meta');
+    var barsEl = document.getElementById('bars');
+    var playBtn = document.getElementById('play');
+    var stopBtn = document.getElementById('stop');
+
+    var audioCtx = null;
+    var activeNodes = [];   // oscillators/gains currently scheduled
+    var rafId = null;
+    var playStart = 0;
+    var songDuration = 0;
+    var trackFills = [];
+
+    srcEl.value = EXAMPLES.twinkle;
+    validate();
+
+    document.getElementById('examples').addEventListener('change', function (e) {
+      srcEl.value = EXAMPLES[e.target.value];
+      stop();
+      validate();
+    });
+
+    document.getElementById('file').addEventListener('change', function (e) {
+      var f = e.target.files[0];
+      if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function () { srcEl.value = reader.result; stop(); validate(); };
+      reader.readAsText(f);
+    });
+
+    srcEl.addEventListener('input', function () { validate(); });
+    playBtn.addEventListener('click', play);
+    stopBtn.addEventListener('click', stop);
+
+    // Parse + report, without making sound. Returns the parsed song (or null).
+    function validate() {
+      var song = MM.parseSong(srcEl.value);
+      var noteCount = 0;
+      for (var i = 0; i < song.tracks.length; i++) {
+        for (var j = 0; j < song.tracks[i].events.length; j++) {
+          if (song.tracks[i].events[j].type !== 'rest') noteCount++;
+        }
+      }
+      metaEl.textContent = song.tracks.length + ' track(s), ' + noteCount + ' notes · ' + song.tempo + ' BPM';
+      renderBars(song);
+      if (song.errors.length) {
+        statusEl.className = 'status err';
+        statusEl.textContent = '⚠ ' + song.errors.length + ' issue(s):\n' + song.errors.join('\n');
+      } else {
+        statusEl.className = 'status ok';
+        statusEl.textContent = '✓ "' + song.title + '" parsed cleanly.';
+      }
+      return song.errors.length ? null : song;
+    }
+
+    function renderBars(song) {
+      barsEl.innerHTML = '';
+      trackFills = [];
+      for (var i = 0; i < song.tracks.length; i++) {
+        var bar = document.createElement('div');
+        bar.className = 'bar';
+        var name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = song.tracks[i].name;
+        var track = document.createElement('div');
+        track.className = 'track';
+        var fill = document.createElement('div');
+        fill.className = 'fill';
+        track.appendChild(fill);
+        bar.appendChild(name);
+        bar.appendChild(track);
+        barsEl.appendChild(bar);
+        trackFills.push(fill);
+      }
+    }
+
+    function play() {
+      var song = validate();
+      if (!song) return; // don't play a song with errors
+      stop();
+
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      var beat = 60 / song.tempo;              // seconds per beat
+      var t0 = audioCtx.currentTime + 0.08;    // small lead-in
+      var master = audioCtx.createGain();
+      master.gain.value = 0.9;
+      master.connect(audioCtx.destination);
+      activeNodes.push(master);
+
+      var maxEnd = 0;
+      for (var ti = 0; ti < song.tracks.length; ti++) {
+        var track = song.tracks[ti];
+        var cursor = t0;
+        for (var ei = 0; ei < track.events.length; ei++) {
+          var ev = track.events[ei];
+          var dur = ev.beats * beat;
+          if (ev.type !== 'rest') {
+            var voices = ev.notes.length || 1;
+            for (var ni = 0; ni < ev.notes.length; ni++) {
+              scheduleNote(track.waveform, ev.notes[ni].freq, cursor, dur, master, voices);
+            }
+          }
+          cursor += dur;
+        }
+        if (cursor > maxEnd) maxEnd = cursor;
+      }
+
+      songDuration = maxEnd - t0;
+      playStart = t0;
+      playBtn.disabled = true;
+      stopBtn.disabled = false;
+      animate();
+    }
+
+    // One note: oscillator through an ADSR gain envelope. Deterministic —
+    // same song + tempo always yields the same schedule.
+    function scheduleNote(waveform, freq, start, dur, dest, voices) {
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = waveform;
+      osc.frequency.setValueAtTime(freq, start);
+
+      var peak = 0.28 / Math.sqrt(voices); // keep chords from clipping
+      var attack = 0.012;
+      var release = Math.min(0.12, dur * 0.5);
+      var sustain = peak * 0.75;
+      var sustainEnd = Math.max(start + attack, start + dur - release);
+
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(peak, start + attack);
+      gain.gain.linearRampToValueAtTime(sustain, start + Math.min(dur * 0.5, attack + 0.08));
+      gain.gain.setValueAtTime(sustain, sustainEnd);
+      gain.gain.linearRampToValueAtTime(0, start + dur);
+
+      osc.connect(gain);
+      gain.connect(dest);
+      osc.start(start);
+      osc.stop(start + dur + 0.02);
+      activeNodes.push(osc, gain);
+    }
+
+    function animate() {
+      var elapsed = audioCtx.currentTime - playStart;
+      var pct = songDuration > 0 ? Math.max(0, Math.min(1, elapsed / songDuration)) : 0;
+      for (var i = 0; i < trackFills.length; i++) trackFills[i].style.width = (pct * 100) + '%';
+      if (elapsed >= songDuration) { stop(); return; }
+      rafId = requestAnimationFrame(animate);
+    }
+
+    function stop() {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      for (var i = 0; i < activeNodes.length; i++) {
+        try { activeNodes[i].stop && activeNodes[i].stop(); } catch (e) {}
+        try { activeNodes[i].disconnect && activeNodes[i].disconnect(); } catch (e) {}
+      }
+      activeNodes = [];
+      playBtn.disabled = false;
+      stopBtn.disabled = true;
+      for (var k = 0; k < trackFills.length; k++) trackFills[k].style.width = '0%';
+    }
+  </script>
+</body>
+</html>
