@@ -1,0 +1,146 @@
+// glitch-ballet — a contemporary dance piece in three movements.
+//
+// The choreography and the score are one and the same here: read top to
+// bottom and you read the dance.
+//
+//   I.  CLASSICAL   — the dancer moves in long, legato lines. Everything
+//                     is poised, symmetrical, consonant. A minuet in A minor.
+//   II. THE GLITCH  — the music starts to skip. Stuttered sixteenths, buzzing
+//                     thirty-seconds, sudden freezes (rests) where the dancer
+//                     is caught mid-gesture and STUMBLES on the abrupt cuts.
+//                     The classical harmony fractures and drops away.
+//   III. LO-FI      — out of the wreckage a laid-back beat assembles itself:
+//                     a boom-bap kick, a backbeat tick, warm jazzy 7th-chord
+//                     pads and a syncopated bass. The dancer finds a new,
+//                     looser groove.
+//
+// Tempo is a single value for the whole file, so the *morph* is written into
+// the rhythm and articulation, not the BPM: flowing half/quarter notes give
+// way to fractured sixteenths, then settle into swung, spacious lo-fi phrasing.
+// 84 BPM reads as a stately minuet up top and a head-nodding lo-fi groove below.
+//
+// Five tracks run the length of the piece; each is 80 beats (20 bars) long so
+// the three movements line up across every part.
+
+title: Glitch Ballet
+tempo: 84
+
+// ---------------------------------------------------------------------------
+// MELODY — the dancer's line. Lyrical, then shattered, then relaxed.
+// ---------------------------------------------------------------------------
+track melody: piano
+  // I. Classical — a poised antecedent/consequent phrase in A minor.
+  A4:q B4:q C5:q E5:q | D5:h C5:q B4:q
+  C5:q B4:q A4:q G#4:q | A4:h R:h
+  E5:q D5:q C5:q B4:q | A4:h G#4:q B4:q
+  C5:q E5:q D5:q C5:q | A4:h R:h
+
+  // II. The glitch — the line stutters, buzzes and trips over sudden rests.
+  A4:s A4:s A4:s R:s C5:e R:e B4:s B4:s R:e R:q
+  E5:t E5:t E5:t E5:t E5:t E5:t E5:t E5:t R:h A4:s Bb4:s A4:s Ab4:s
+  G4:s G4:s R:e R:q C5:t C5:t C5:t C5:t D5:s R:s E5:s R:s E5:s R:s
+  R:h F5:t F5:t F5:t F5:t R:e G4:s Ab4:s A4:s Bb4:s
+
+  // III. Lo-fi — sparse, swung, sitting back on chord tones. Lands on C.
+  R:q A4:q. C5:e R:q | R:q G4:q. B4:e R:q
+  R:q F4:q. A4:e G4:e R:e | R:h D5:q. R:e
+  R:q E5:q. C5:e G4:e R:e | R:q C5:q. A4:e R:q
+  R:e F4:e A4:e C5:e D5:q R:q | R:q B4:e D5:e C5:h
+
+// ---------------------------------------------------------------------------
+// HARMONY — a soft sustained pad (organ/sine). Consonant, then it collapses,
+// then it returns as warm lo-fi 7th chords.
+// ---------------------------------------------------------------------------
+track harmony: organ
+  // I. Classical — whole-note triads: Am E Am E | Am Dm E Am
+  [A3 C4 E4]:w | [E3 G#3 B3]:w
+  [A3 C4 E4]:w | [E3 G#3 B3]:w
+  [A3 C4 E4]:w | [D3 F4 A4]:w
+  [E3 G#3 B3]:w | [A3 C4 E4]:w
+
+  // II. The glitch — the harmony fractures: one stab, silence, a dissonant
+  // stutter, then a tension cluster leaning into the new key.
+  [A3 C4 E4]:e R:e R:h R:q
+  R:w
+  [E3 G#3 Bb3]:s R:s [E3 G#3 Bb3]:s R:s R:h R:q
+  R:h [F3 G#3 B3 D4]:h
+
+  // III. Lo-fi — jazzy 7ths with a pushed "and of 2" stab: Fmaj7 Em7 Dm7 G7,
+  // then Cmaj7 Am7 Dm7, resolving G7 -> Cmaj7.
+  [F3 A3 C4 E4]:q. [F3 A3 C4 E4]:e R:h
+  [E3 G3 B3 D4]:q. [E3 G3 B3 D4]:e R:h
+  [D3 F3 A3 C4]:q. [D3 F3 A3 C4]:e R:h
+  [G3 B3 D4 F4]:q. [G3 B3 D4 F4]:e R:h
+  [C3 E3 G3 B3]:q. [C3 E3 G3 B3]:e R:h
+  [A2 C3 E3 G3]:q. [A2 C3 E3 G3]:e R:h
+  [D3 F3 A3 C4]:q. [D3 F3 A3 C4]:e R:h
+  [G3 B3 D4 F4]:h [C3 E3 G3 B3]:h
+
+// ---------------------------------------------------------------------------
+// BASS — walking half-notes, then a glitch-repeat that drops out, then a
+// mellow syncopated lo-fi bassline.
+// ---------------------------------------------------------------------------
+track bass: bass
+  // I. Classical — root + fifth under each chord.
+  A2:h E3:h | E2:h B2:h
+  A2:h E3:h | E2:h B2:h
+  A2:h E3:h | D2:h A2:h
+  E2:h B2:h | A2:h E3:h
+
+  // II. The glitch — a low note machine-repeats, then silence, then a pickup.
+  A2:s A2:s A2:s A2:s R:h R:q
+  R:w
+  R:h E2:s E2:s R:e R:q
+  R:h R:q G2:q
+
+  // III. Lo-fi — dotted, syncopated roots with an octave/fifth pop.
+  F2:q. R:e F2:e R:e C3:q | E2:q. R:e E2:e R:e B2:q
+  D2:q. R:e D2:e R:e A2:q | G2:q. R:e G2:e R:e D3:q
+  C2:q. R:e C2:e R:e G2:q | A2:q. R:e A2:e R:e E3:q
+  D2:q. R:e D2:e R:e A2:q | G2:h C2:h
+
+// ---------------------------------------------------------------------------
+// BEAT — the "kick". Silent through the classical movement, a couple of
+// thumps foreshadow the drop in the glitch, then a boom-bap lo-fi pattern.
+// ---------------------------------------------------------------------------
+track beat: bass
+  // I. Classical — no beat yet.
+  R:w | R:w
+  R:w | R:w
+  R:w | R:w
+  R:w | R:w
+
+  // II. The glitch — two low thumps arrive out of the chaos.
+  R:w
+  R:w
+  R:w
+  C2:q R:q C2:q R:q
+
+  // III. Lo-fi — kick on 1, the "and of 2", and 3 (classic head-nod).
+  C2:q R:e C2:e C2:q R:q | C2:q R:e C2:e C2:q R:q
+  C2:q R:e C2:e C2:q R:q | C2:q R:e C2:e C2:q R:q
+  C2:q R:e C2:e C2:q R:q | C2:q R:e C2:e C2:q R:q
+  C2:q R:e C2:e C2:q R:q | C2:q R:q C2:h
+
+// ---------------------------------------------------------------------------
+// SNAP — a bright square tick standing in for a snare/hat. Silent until the
+// lo-fi movement, where it lays a backbeat on beats 2 and 4.
+// ---------------------------------------------------------------------------
+track snap: pluck
+  // I. Classical — silent.
+  R:w | R:w
+  R:w | R:w
+  R:w | R:w
+  R:w | R:w
+
+  // II. The glitch — silence, then a single bright tick as a pickup.
+  R:w
+  R:w
+  R:w
+  R:h R:q A6:q
+
+  // III. Lo-fi — backbeat on 2 and 4, with a small fill to close.
+  R:q A5:e R:q. A5:e R:e | R:q A5:e R:q. A5:e R:e
+  R:q A5:e R:q. A5:e R:e | R:q A5:e R:q. A5:e R:e
+  R:q A5:e R:q. A5:e R:e | R:q A5:e R:q. A5:e R:e
+  R:q A5:e R:q. A5:e R:e | R:h A5:e R:e A5:q
