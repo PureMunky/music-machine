@@ -81,12 +81,14 @@
     </p>
   </div>
 
-  <!-- Same parser the Node validator uses. Loaded as a classic script so it
-       works from file:// without a server. -->
+  <!-- Same parser the Node validator uses and the same audio engine the
+       published gallery uses. Loaded as classic scripts so they work from
+       file:// without a server. -->
   <script src="../src/song.js"></script>
+  <script src="../src/engine.js"></script>
   <script>
-    // Fallback for the standalone/artifact build where the parser is inlined.
     var MM = window.MusicMachine;
+    var engine = new window.MusicMachineEngine.AudioEngine();
 
     var EXAMPLES = {
       twinkle:
@@ -113,11 +115,6 @@
     var playBtn = document.getElementById('play');
     var stopBtn = document.getElementById('stop');
 
-    var audioCtx = null;
-    var activeNodes = [];   // oscillators/gains currently scheduled
-    var rafId = null;
-    var playStart = 0;
-    var songDuration = 0;
     var trackFills = [];
 
     srcEl.value = EXAMPLES.twinkle;
@@ -183,91 +180,30 @@
       }
     }
 
+    function setFills(pct) {
+      for (var i = 0; i < trackFills.length; i++) trackFills[i].style.width = (pct * 100) + '%';
+    }
+
     function play() {
       var song = validate();
       if (!song) return; // don't play a song with errors
-      stop();
-
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-
-      var beat = 60 / song.tempo;              // seconds per beat
-      var t0 = audioCtx.currentTime + 0.08;    // small lead-in
-      var master = audioCtx.createGain();
-      master.gain.value = 0.9;
-      master.connect(audioCtx.destination);
-      activeNodes.push(master);
-
-      var maxEnd = 0;
-      for (var ti = 0; ti < song.tracks.length; ti++) {
-        var track = song.tracks[ti];
-        var cursor = t0;
-        for (var ei = 0; ei < track.events.length; ei++) {
-          var ev = track.events[ei];
-          var dur = ev.beats * beat;
-          if (ev.type !== 'rest') {
-            var voices = ev.notes.length || 1;
-            for (var ni = 0; ni < ev.notes.length; ni++) {
-              scheduleNote(track.waveform, ev.notes[ni].freq, cursor, dur, master, voices);
-            }
-          }
-          cursor += dur;
+      engine.play(song, {
+        onProgress: setFills,
+        onEnd: function () {
+          playBtn.disabled = false;
+          stopBtn.disabled = true;
+          setFills(0);
         }
-        if (cursor > maxEnd) maxEnd = cursor;
-      }
-
-      songDuration = maxEnd - t0;
-      playStart = t0;
+      });
       playBtn.disabled = true;
       stopBtn.disabled = false;
-      animate();
-    }
-
-    // One note: oscillator through an ADSR gain envelope. Deterministic —
-    // same song + tempo always yields the same schedule.
-    function scheduleNote(waveform, freq, start, dur, dest, voices) {
-      var osc = audioCtx.createOscillator();
-      var gain = audioCtx.createGain();
-      osc.type = waveform;
-      osc.frequency.setValueAtTime(freq, start);
-
-      var peak = 0.28 / Math.sqrt(voices); // keep chords from clipping
-      var attack = 0.012;
-      var release = Math.min(0.12, dur * 0.5);
-      var sustain = peak * 0.75;
-      var sustainEnd = Math.max(start + attack, start + dur - release);
-
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(peak, start + attack);
-      gain.gain.linearRampToValueAtTime(sustain, start + Math.min(dur * 0.5, attack + 0.08));
-      gain.gain.setValueAtTime(sustain, sustainEnd);
-      gain.gain.linearRampToValueAtTime(0, start + dur);
-
-      osc.connect(gain);
-      gain.connect(dest);
-      osc.start(start);
-      osc.stop(start + dur + 0.02);
-      activeNodes.push(osc, gain);
-    }
-
-    function animate() {
-      var elapsed = audioCtx.currentTime - playStart;
-      var pct = songDuration > 0 ? Math.max(0, Math.min(1, elapsed / songDuration)) : 0;
-      for (var i = 0; i < trackFills.length; i++) trackFills[i].style.width = (pct * 100) + '%';
-      if (elapsed >= songDuration) { stop(); return; }
-      rafId = requestAnimationFrame(animate);
     }
 
     function stop() {
-      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-      for (var i = 0; i < activeNodes.length; i++) {
-        try { activeNodes[i].stop && activeNodes[i].stop(); } catch (e) {}
-        try { activeNodes[i].disconnect && activeNodes[i].disconnect(); } catch (e) {}
-      }
-      activeNodes = [];
+      engine.stop();
       playBtn.disabled = false;
       stopBtn.disabled = true;
-      for (var k = 0; k < trackFills.length; k++) trackFills[k].style.width = '0%';
+      setFills(0);
     }
   </script>
 </body>
