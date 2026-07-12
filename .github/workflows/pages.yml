@@ -7,23 +7,23 @@ on:
       - 'songs/**'
       - 'src/**'
       - 'tools/build-site.js'
+      - 'tools/gh-pages.sh'
       - 'tools/gallery.html'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
-# Allow the workflow to publish to Pages.
+# Push the built site to the gh-pages branch.
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
-# Only one Pages deploy at a time; don't cancel an in-progress one.
+# Serialize every writer to the gh-pages branch (this workflow and PR previews)
+# so their pushes never race.
 concurrency:
-  group: pages
+  group: gh-pages-branch
   cancel-in-progress: false
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,26 +32,13 @@ jobs:
         with:
           node-version: '20'
 
-      # Validate every song, then build the static gallery into ./site.
       - name: Validate songs
         run: node tools/validate.js
 
       - name: Build site
         run: node tools/build-site.js
 
-      - uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Publish to gh-pages (site root)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash tools/gh-pages.sh publish

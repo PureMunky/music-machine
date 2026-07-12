@@ -69,14 +69,35 @@ python3 -m http.server   # then open http://localhost:8000/site/
 ```
 
 **One-time setup:** in the repo on GitHub, go to **Settings → Pages** and set
-**Source: GitHub Actions**. After the next push to `main` (or a manual run via
-the Actions tab → "Deploy songs to GitHub Pages" → *Run workflow*), the gallery
-goes live at `https://<owner>.github.io/music-machine/`.
+**Source: Deploy from a branch → `gh-pages` / (root)**. After the next push to
+`main` (or a manual run via the Actions tab → "Deploy songs to GitHub Pages" →
+*Run workflow*), the workflow builds the gallery and pushes it to the
+`gh-pages` branch, and it goes live at `https://<owner>.github.io/music-machine/`.
 
 How it works: GitHub Pages is static and can't list a directory at runtime, so
 `tools/build-site.js` bakes every `.song` file into a manifest at build time.
 The gallery then parses and plays them client-side with the **same** parser and
 audio engine used everywhere else in the project.
+
+### Play a pull request before it merges
+
+Every pull request gets its own **playable preview**. When you open (or push
+to) a PR that touches a song or the player, CI builds the gallery and deploys
+it to a per-PR folder on the same Pages site, then posts a comment with a
+click-to-play link:
+
+```
+https://<owner>.github.io/music-machine/pr-preview/pr-<number>/
+```
+
+Open the link, press ▶, and hear the change in the browser — no checkout, no
+install, and no audio files in the repo (the player is generated on the fly).
+The preview updates on every push and is torn down automatically when the PR
+closes. Root deploys from `main` never disturb open previews.
+
+> Previews deploy for PRs from branches in this repo. Pull requests from
+> forks get a read-only token and can't deploy or comment; validate them in CI
+> and play them locally via `player/index.html`.
 
 ## Repository layout
 
@@ -89,7 +110,10 @@ tools/validate.js    CLI validator (CI-friendly)
 tools/test.js        unit tests for the parser core
 tools/build-site.js  builds the GitHub Pages gallery into site/
 tools/gallery.html   the gallery page template
-.github/workflows/pages.yml   validate → build → deploy to Pages
+tools/gh-pages.sh    publishes site/ to the gh-pages branch (root or a PR subfolder)
+tools/pr-comment.sh  posts/updates the sticky preview-link comment on a PR
+.github/workflows/pages.yml        validate → build → deploy main to Pages
+.github/workflows/pr-preview.yml   build → deploy a per-PR playable preview
 docs/FORMAT.md       the .song format reference
 ```
 

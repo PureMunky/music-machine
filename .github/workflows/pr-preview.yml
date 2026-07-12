@@ -1,0 +1,87 @@
+name: PR preview (playable songs)
+
+# Build the playable gallery for each pull request and deploy it to a per-PR
+# folder on GitHub Pages, so a reviewer can press ▶ and hear the songs in the
+# browser before the PR is merged. On close, the preview is torn down.
+#
+# Note: pull requests from forks get a read-only token and cannot deploy a
+# preview or comment; those PRs still validate in CI and can be played locally
+# (open player/index.html after checkout).
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - 'songs/**'
+      - 'src/**'
+      - 'tools/build-site.js'
+      - 'tools/gh-pages.sh'
+      - 'tools/gallery.html'
+      - '.github/workflows/pr-preview.yml'
+
+permissions:
+  contents: write        # push the gh-pages branch
+  pull-requests: write   # post the play-link comment
+
+# Share the gh-pages writer group with the main deploy so pushes serialize.
+concurrency:
+  group: gh-pages-branch
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute preview location
+        id: loc
+        run: |
+          owner="${GITHUB_REPOSITORY%%/*}"
+          repo="${GITHUB_REPOSITORY##*/}"
+          pr="${{ github.event.pull_request.number }}"
+          echo "subdir=pr-preview/pr-${pr}" >> "$GITHUB_OUTPUT"
+          echo "url=https://${owner,,}.github.io/${repo}/pr-preview/pr-${pr}/" >> "$GITHUB_OUTPUT"
+
+      # ---- PR closed: tear the preview down ---------------------------------
+      - name: Remove preview
+        if: github.event.action == 'closed'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash tools/gh-pages.sh remove "${{ steps.loc.outputs.subdir }}"
+
+      - name: Comment (preview removed)
+        if: github.event.action == 'closed'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bash tools/pr-comment.sh "${{ github.event.pull_request.number }}" \
+            "🎵 **Song preview** — removed now that this PR is closed."
+
+      # ---- PR open/updated: build and deploy the preview --------------------
+      - uses: actions/setup-node@v4
+        if: github.event.action != 'closed'
+        with:
+          node-version: '20'
+
+      - name: Build site
+        if: github.event.action != 'closed'
+        run: node tools/build-site.js
+
+      - name: Publish preview
+        if: github.event.action != 'closed'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash tools/gh-pages.sh publish "${{ steps.loc.outputs.subdir }}"
+
+      - name: Comment (play link)
+        if: github.event.action != 'closed'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bash tools/pr-comment.sh "${{ github.event.pull_request.number }}" \
+            "🎵 **Play the songs in this PR:** ${{ steps.loc.outputs.url }}
+
+          Open the link and press ▶ on any song — it plays in your browser with the same parser and audio engine as the rest of the project (nothing to install). The preview updates on every push and is removed when the PR closes.
+
+          _Requires GitHub Pages to be serving from the \`gh-pages\` branch (Settings → Pages). May take a minute to go live after the first deploy._"
