@@ -2,13 +2,7 @@ name: Deploy songs to GitHub Pages
 
 on:
   push:
-    # Publishes from the default branch. `main` is the intended long-term
-    # home; the claude/* branch is included so the gallery can go live before
-    # a main branch exists. Once you consolidate onto main, drop the extra
-    # branch from this list.
-    branches:
-      - main
-      - claude/code-music-version-control-2w8t65
+    branches: [main]
     paths:
       - 'songs/**'
       - 'src/**'
